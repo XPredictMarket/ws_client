@@ -1,0 +1,17 @@
+[package]
+name = "ws-client"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+subxt = { git = "https://github.com/paritytech/substrate-subxt.git", branch = "master", package = "substrate-subxt" }
+codec = { package = "parity-scale-codec", version = "2.0.0", default-features = false, features = ["derive"] }
+serde = { version = "1.0.124", features = ["derive"] }
+serde_json = "1.0.64"
+async-std = {version = "1.9.0", features = ["attributes", "tokio1"]}
+async-trait = "0.1.50"
+sp-core = "3.0.0"
+sp-runtime = "3.0.0"
+sp-keyring = "3.0.0"
+frame-system = "3.0.0"
+frame-support = "3.0.0"
