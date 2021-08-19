@@ -1,4 +1,6 @@
-use crate::pallets::{autonomy::Autonomy, couple::Couple, proposals::Proposals, tokens::Tokens, *};
+use crate::pallets::{
+	autonomy::Autonomy, couple::Couple, proposals::Proposals, ruler::Ruler, tokens::Tokens, *,
+};
 use sp_runtime::{
 	generic::Header,
 	traits::{BlakeTwo256, IdentifyAccount, Verify},
@@ -17,7 +19,6 @@ pub type AccountId = <<Signature as Verify>::Signer as IdentifyAccount>::Account
 pub type BalanceOf<T> = <T as Balances>::Balance;
 pub type Hash = sp_core::H256;
 pub type Index = u32;
-pub type Moment = u64;
 pub type BlockNumber = u32;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -75,3 +76,5 @@ impl Autonomy for XPredictRuntime {}
 impl Couple for XPredictRuntime {}
 
 impl Proposals for XPredictRuntime {}
+
+impl Ruler for XPredictRuntime {}

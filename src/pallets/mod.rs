@@ -1,6 +1,7 @@
 pub mod autonomy;
 pub mod couple;
 pub mod proposals;
+pub mod ruler;
 pub mod tokens;
 
 use codec::{Decode, Encode};
@@ -11,6 +12,7 @@ pub type ProposalId = u32;
 pub type VersionId = u32;
 pub type CategoryId = u32;
 pub type ChainId = u32;
+pub type Moment = u64;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Encode, Decode)]
 pub enum RulerModule {

@@ -7,7 +7,7 @@ use subxt::{sp_core::sr25519::Pair as Sr25519Pair, sudo::*, system::*, Client, P
 
 use crate::{
 	pallets::{couple::*, proposals::*, tokens::*, *},
-	runtime::{Moment, XPredictRuntime},
+	runtime::XPredictRuntime,
 };
 
 pub struct XPredictLogic;
@@ -36,7 +36,7 @@ impl XPredictLogic {
 		client: &Client<XPredictRuntime>,
 		signer: &PairSigner<XPredictRuntime, Sr25519Pair>,
 		currency_id: CurrencyId,
-		to: <XPredictRuntime as System>::AccountId,
+		to: &<XPredictRuntime as System>::AccountId,
 		number: Balance,
 	) -> Result<(), Box<dyn std::error::Error>> {
 		let call = client
@@ -58,7 +58,7 @@ impl XPredictLogic {
 		client: &Client<XPredictRuntime>,
 		signer: &PairSigner<XPredictRuntime, Sr25519Pair>,
 		currency_id: CurrencyId,
-		to: <XPredictRuntime as System>::AccountId,
+		to: &<XPredictRuntime as System>::AccountId,
 		number: Balance,
 	) -> Result<(), Box<dyn std::error::Error>> {
 		let result = client

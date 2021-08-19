@@ -50,7 +50,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             &client,
             &admin_signer,
             currency_id,
-            admin_signer.signer().public().into_account().into(),
+            &admin_signer.signer().public().into_account().into(),
             number - balance,
         )
         .await?;
@@ -85,7 +85,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             } else {
                 continue;
             };
-            XPredictLogic::transfer_token(&client, &admin_signer, id, public.into(), num).await?;
+            XPredictLogic::transfer_token(&client, &admin_signer, id, &public.into(), num).await?;
         }
     }
 
