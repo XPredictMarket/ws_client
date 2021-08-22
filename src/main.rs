@@ -1,4 +1,4 @@
-use std::{thread, time};
+use std::time::Duration;
 
 use crate::{
     pairs::{PairAuthority, XPredictKeystore, XPredictPairs},
@@ -131,7 +131,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .await
             .is_err()
         {
-            XPredictLogic::autonomy_tag(&client, &admin_signer, &dave.public().into()).await?;
+            XPredictLogic::autonomy_tag(&client, &admin_signer, &account.public().into()).await?;
         }
     }
 
@@ -169,7 +169,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         if state == ProposalStatus::WaitingForResults {
             break;
         }
-        thread::sleep(time::Duration::from_secs(10));
+        async_std::task::sleep(Duration::from_secs(10)).await;
     }
 
     Ok(())
