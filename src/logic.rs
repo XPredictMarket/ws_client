@@ -1,9 +1,17 @@
 use std::{
+	convert::TryInto,
 	marker::PhantomData,
 	time::{Duration, SystemTime},
 };
 
-use subxt::{sp_core::sr25519::Pair as Sr25519Pair, sudo::*, system::*, Client, PairSigner};
+use chrono::{DateTime, NaiveDateTime, Utc};
+use codec::Encode;
+use sp_core::Pair;
+use sp_runtime::{traits::Verify, MultiSignature};
+use subxt::{
+	extrinsic::create_unsigned, sp_core::sr25519::Pair as Sr25519Pair, sudo::*, system::*, Client,
+	PairSigner,
+};
 
 use crate::{
 	pallets::{autonomy::*, couple::*, proposals::*, tokens::*, *},
@@ -179,6 +187,33 @@ impl XPredictLogic {
 		}
 	}
 
+	pub async fn autonomy_upload(
+		client: &Client<XPredictRuntime>,
+		signer: &PairSigner<XPredictRuntime, Sr25519Pair>,
+		proposal_id: ProposalId,
+		result: CurrencyId,
+	) -> Result<(), Box<dyn std::error::Error>> {
+		let public: <MultiSignature as Verify>::Signer = signer.signer().public().into();
+		let payload = Payload {
+			proposal_id,
+			result,
+			public,
+		};
+		let encoded_upload_call = client.encode(UploadResultCall {
+			payload: payload.clone(),
+			signature: signer.signer().sign(&(payload.encode())).into(),
+			_runtime: PhantomData,
+		})?;
+		let result = client
+			.submit_and_watch_extrinsic(create_unsigned::<XPredictRuntime>(encoded_upload_call))
+			.await?;
+		if result.upload_result()?.is_some() {
+			Ok(())
+		} else {
+			Err("unknown error".into())
+		}
+	}
+
 	pub async fn autonomy_minimal_stake_number(
 		client: &Client<XPredictRuntime>,
 	) -> Result<Balance, Box<dyn std::error::Error>> {
@@ -250,6 +285,18 @@ impl XPredictLogic {
 		}
 	}
 
+	pub async fn proposal_close_time(
+		client: &Client<XPredictRuntime>,
+		proposal_id: ProposalId,
+	) -> Result<Moment, Box<dyn std::error::Error>> {
+		let result = client.proposal_close_time(proposal_id, None).await?;
+		if let Some(time) = result {
+			Ok(time)
+		} else {
+			Err("proposal id incorrect".into())
+		}
+	}
+
 	pub async fn balance_of(
 		client: &Client<XPredictRuntime>,
 		currency_id: CurrencyId,
@@ -281,5 +328,19 @@ impl XPredictLogic {
 		client: &Client<XPredictRuntime>,
 	) -> Result<CurrencyId, Box<dyn std::error::Error>> {
 		Ok(client.current_currency_id(None).await?.unwrap_or(0))
+	}
+
+	pub fn ts_format(ts: u64) -> Result<String, Box<dyn std::error::Error>> {
+		let naive = NaiveDateTime::from_timestamp(ts.try_into()?, 0);
+		let datetime: DateTime<Utc> = DateTime::from_utc(naive, Utc);
+		let newdate = datetime.format("%Y-%m-%d %H:%M:%S");
+		Ok(newdate.to_string())
+	}
+
+	pub fn now_format() -> Result<String, Box<dyn std::error::Error>> {
+		let ts = SystemTime::now()
+			.duration_since(SystemTime::UNIX_EPOCH)?
+			.as_millis() as u64;
+		Self::ts_format(ts)
 	}
 }

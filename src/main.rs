@@ -80,21 +80,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let charlie = pairs_iter.next().unwrap();
     let dave = pairs_iter.next().unwrap();
     let eve = pairs_iter.next().unwrap();
+    let ferdie = pairs_iter.next().unwrap();
 
     for id in [0, currency_id] {
-        for public in [bob.public(), charlie.public(), dave.public(), eve.public()] {
-            let balance = XPredictLogic::balance_of(&client, id, &public.into()).await?;
+        for pair in [bob, charlie, dave, eve, ferdie] {
+            let balance = XPredictLogic::balance_of(&client, id, &pair.public().into()).await?;
             let num = if id == 0 {
                 if balance > 10u128.pow(12) {
                     continue;
                 }
                 10 * 10u128.pow(12)
-            } else if public == bob.public() {
+            } else if pair.public() == bob.public() {
                 if balance > bob_number {
                     continue;
                 }
                 bob_number
-            } else if public == charlie.public() {
+            } else if pair.public() == charlie.public() {
                 if balance > charlie_number {
                     continue;
                 }
@@ -102,13 +103,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             } else {
                 continue;
             };
-            XPredictLogic::transfer_token(&client, &admin_signer, id, &public.into(), num).await?;
+            XPredictLogic::transfer_token(&client, &admin_signer, id, &pair.public().into(), num)
+                .await?;
         }
     }
 
+    println!("create an account for uploading results...");
     let autonomy_minimal_stake_number =
         XPredictLogic::autonomy_minimal_stake_number(&client).await?;
-    for account in [dave, eve] {
+    for account in [dave, eve, ferdie] {
         let balance = XPredictLogic::balance_of(&client, 1, &account.public().into()).await?;
         if balance < autonomy_minimal_stake_number {
             XPredictLogic::transfer_token(
@@ -143,7 +146,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     XPredictLogic::quick_to_formal(&client, &admin_signer, proposal_id).await?;
 
     let charlie_signer = <XPredictKeystore as XPredictPairs<XPredictRuntime>>::get_signer(bob);
-    let (yes, _) = XPredictLogic::proposal_pairs(&client, proposal_id).await?;
+    let (yes, no) = XPredictLogic::proposal_pairs(&client, proposal_id).await?;
     let actual_number =
         XPredictLogic::proposal_buy(&client, &charlie_signer, proposal_id, yes, charlie_number)
             .await?;
@@ -157,20 +160,34 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("bob yes balance: {:?}", balance);
 
-    let (yes, no) = XPredictLogic::proposal_optional(&client, proposal_id).await?;
-    println!("yes: {:?}, no: {:?}", yes, no);
-
-    // stake to node
+    let (yes_ops, no_ops) = XPredictLogic::proposal_optional(&client, proposal_id).await?;
+    println!("yes: {:?}, no: {:?}", yes_ops, no_ops);
 
     println!("waiting for proposal status...");
+    let close_time = XPredictLogic::proposal_close_time(&client, proposal_id).await?;
     loop {
         let state = XPredictLogic::proposal_status(&client, proposal_id).await?;
-        println!("current proposal status: {:?}", state);
+        println!(
+            "current proposal status: {:?}, current time: {}, close time: {}",
+            state,
+            XPredictLogic::now_format()?,
+            XPredictLogic::ts_format(close_time)?
+        );
         if state == ProposalStatus::WaitingForResults {
             break;
         }
         async_std::task::sleep(Duration::from_secs(10)).await;
     }
+
+    println!("waiting for upload result...");
+    let dave_signer = <XPredictKeystore as XPredictPairs<XPredictRuntime>>::get_signer(dave);
+    XPredictLogic::autonomy_upload(&client, &dave_signer, proposal_id, yes).await?;
+
+    let eve_signer = <XPredictKeystore as XPredictPairs<XPredictRuntime>>::get_signer(eve);
+    XPredictLogic::autonomy_upload(&client, &eve_signer, proposal_id, yes).await?;
+
+    let ferdie_signer = <XPredictKeystore as XPredictPairs<XPredictRuntime>>::get_signer(ferdie);
+    XPredictLogic::autonomy_upload(&client, &ferdie_signer, proposal_id, no).await?;
 
     Ok(())
 }
